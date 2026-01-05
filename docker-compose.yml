@@ -7,18 +7,18 @@ services:
       dockerfile: Dockerfile.app
     container_name: iiif-depot-app
     ports:
-      - '8080:3000'
+      - '127.0.0.1:3000:3000'
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - BASE_URL=http://localhost:3000
+      - BASE_URL=https://iiif-hosting.rekihaku.ac.jp
       - DB_PATH=/data/db/iiif-depot.db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - UPLOAD_DIR=/data/images/original
       - PTIFF_DIR=/data/images/ptiff
-      - CANTALOUPE_URL=http://cantaloupe:8182/iiif/2
-      - CANTALOUPE_PUBLIC_URL=http://iiif-img.honkoku.org/iiif/2
+      - CANTALOUPE_URL=http://127.0.0.1:8182/iiif/2
+      - CANTALOUPE_PUBLIC_URL=https://iiif-img.honkoku.org/iiif/2
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
@@ -31,8 +31,6 @@ services:
       - redis
       - cantaloupe
     restart: unless-stopped
-    networks:
-      - iiif-network
 
   worker:
     build:
@@ -51,28 +49,21 @@ services:
     depends_on:
       - redis
     restart: unless-stopped
-    networks:
-      - iiif-network
 
   redis:
     image: redis:7-alpine
     container_name: iiif-depot-redis
-    ports:
-      - '6379:6379'
     volumes:
       - redis-data:/data
     restart: unless-stopped
-    networks:
-      - iiif-network
 
   cantaloupe:
     image: islandora/cantaloupe:renovate.all-non-major-dependencies
     container_name: iiif-depot-cantaloupe
     ports:
-      - '8182:8182'
+      - '127.0.0.1:8182:8182'
     environment:
-      - CANTALOUPE_ENDPOINT_ADMIN_ENABLED=true
-      - CANTALOUPE_ENDPOINT_ADMIN_SECRET=changemeplease
+      - CANTALOUPE_ENDPOINT_ADMIN_ENABLED=false
       - CANTALOUPE_SOURCE_STATIC=FilesystemSource
       - CANTALOUPE_FILESYSTEMSOURCE_BASICLOOKUPSTRATEGY_PATH_PREFIX=/imageroot/
       - CANTALOUPE_FILESYSTEMSOURCE_BASICLOOKUPSTRATEGY_PATH_SUFFIX=.tif
@@ -81,13 +72,7 @@ services:
       - ./data/images/ptiff:/imageroot:ro
       - cantaloupe-cache:/var/cache/cantaloupe
     restart: unless-stopped
-    networks:
-      - iiif-network
 
 volumes:
   redis-data:
   cantaloupe-cache:
-
-networks:
-  iiif-network:
-    driver: bridge
