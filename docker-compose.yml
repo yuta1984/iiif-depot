@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile.app
     container_name: iiif-depot-app
     ports:
-      - "3000:3000"
+      - "8080:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -18,7 +18,7 @@ services:
       - UPLOAD_DIR=/data/images/original
       - PTIFF_DIR=/data/images/ptiff
       - CANTALOUPE_URL=http://cantaloupe:8182/iiif/2
-      - CANTALOUPE_PUBLIC_URL=http://localhost:8182/iiif/2
+      - CANTALOUPE_PUBLIC_URL=http://iiif-img.honkoku.org/iiif/2
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
