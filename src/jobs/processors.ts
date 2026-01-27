@@ -4,7 +4,7 @@ import { promisify } from 'util';
 import * as path from 'path';
 import * as fs from 'fs';
 import { ImageProcessingJobData } from '../types';
-import { updateImage, getImageById, createJobStatus, updateJobStatus, incrementStorageUsed, getResourceById, updateResource, getImagesByResourceId } from '../db/queries';
+import { updateImage, getImageById, createJobStatus, updateJobStatus, getJobStatusById, incrementStorageUsed, getResourceById, updateResource, getImagesByResourceId } from '../db/queries';
 import { logger } from '../utils/logger';
 import { CONFIG } from '../config';
 
@@ -18,16 +18,31 @@ export async function processImage(job: Job<ImageProcessingJobData>): Promise<vo
   // Update image status
   updateImage(imageId, { status: 'processing' });
 
-  // Create job status
-  createJobStatus({
-    id: job.id!,
-    image_id: imageId,
-    status: 'active',
-    progress: 0,
-    error_message: null,
-    started_at: Date.now(),
-    completed_at: null,
-  });
+  // Create or update job status (handle retry attempts)
+  const existingJobStatus = getJobStatusById(job.id!);
+
+  if (existingJobStatus) {
+    // Retry attempt: update existing job status
+    logger.info(`Retrying job ${job.id} for image ${imageId}`);
+    updateJobStatus(job.id!, {
+      status: 'active',
+      progress: 0,
+      error_message: null,
+      started_at: Date.now(),
+      completed_at: null,
+    });
+  } else {
+    // First attempt: create new job status
+    createJobStatus({
+      id: job.id!,
+      image_id: imageId,
+      status: 'active',
+      progress: 0,
+      error_message: null,
+      started_at: Date.now(),
+      completed_at: null,
+    });
+  }
 
   try {
     // Ensure output directory exists

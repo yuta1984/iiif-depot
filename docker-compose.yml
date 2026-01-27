@@ -11,7 +11,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - BASE_URL=https://iiif-hosting.rekihaku.ac.jp
+      - BASE_URL=https://iiif-depot.honkoku.org
       - DB_PATH=/data/db/iiif-depot.db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
