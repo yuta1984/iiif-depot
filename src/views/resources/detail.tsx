@@ -107,7 +107,11 @@ export const ResourceDetail: FC<ResourceDetailProps> = ({ user, resource, images
                 <div class="card mb-4">
                   <div class="card-body">
                     <h5 class="card-title">IIIF ビューア</h5>
-                    <div id="uv" style="width: 100%; height: 600px; background: #000;"></div>
+                    <iframe
+                      src={`/resources/${resource.id}/viewer`}
+                      style="width: 100%; height: 600px; border: none; display: block;"
+                      allowfullscreen
+                    ></iframe>
                   </div>
                 </div>
 
@@ -206,32 +210,6 @@ export const ResourceDetail: FC<ResourceDetailProps> = ({ user, resource, images
         </div>
       )}
 
-      {allImagesReady && (
-        <>
-          <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/universalviewer@4.0.0/dist/uv.css" />
-          <script src="https://cdn.jsdelivr.net/npm/universalviewer@4.0.0/dist/umd/UV.js"></script>
-          <script dangerouslySetInnerHTML={{__html: `
-            window.addEventListener('DOMContentLoaded', function() {
-              var uv;
-              var manifestUri = '${manifestUrl}';
-
-              var data = {
-                manifest: manifestUri,
-                embedded: true
-              };
-
-              uv = UV.init("uv", data);
-
-              // Handle resize for responsive display
-              window.addEventListener('resize', function() {
-                if (uv) {
-                  uv.resize();
-                }
-              });
-            });
-          `}} />
-        </>
-      )}
     </Layout>
   );
 };

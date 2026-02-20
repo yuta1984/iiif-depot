@@ -26,6 +26,7 @@ import { imageProcessingQueue } from '../jobs/queue';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
 import { ImageProcessingJobData } from '../types';
+import { CONFIG } from '../config';
 
 const resources = new Hono();
 
@@ -223,6 +224,88 @@ resources.post('/', async (c) => {
     logger.error('Resource creation error', error);
     return c.html(<ResourceNew user={user} errors={{ _form: 'リソースの作成に失敗しました' }} />);
   }
+});
+
+// Bulk delete resources
+resources.post('/bulk-delete', async (c) => {
+  const user = c.get('user')!;
+  const body = await c.req.json<{ ids: string[] }>();
+  const ids = body.ids;
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return c.json({ error: 'IDが指定されていません' }, 400);
+  }
+
+  const deleted: string[] = [];
+  const failed: string[] = [];
+
+  for (const resourceId of ids) {
+    const resource = getResourceById(resourceId);
+    if (!resource || resource.user_id !== user.id) {
+      failed.push(resourceId);
+      continue;
+    }
+
+    try {
+      const images = getImagesByResourceId(resourceId);
+      let totalSize = 0;
+
+      for (const image of images) {
+        const ptiffSize = image.ptiff_path ? getFileSize(image.ptiff_path) : 0;
+        totalSize += image.file_size + ptiffSize;
+        deleteFile(image.file_path);
+        if (image.ptiff_path) deleteFile(image.ptiff_path);
+      }
+
+      deleteResource(resourceId);
+      decrementStorageUsed(user.id, totalSize);
+      deleted.push(resourceId);
+
+      logger.info(`Resource ${resourceId} deleted by bulk-delete`);
+    } catch (error) {
+      logger.error(`Bulk delete failed for resource ${resourceId}`, error);
+      failed.push(resourceId);
+    }
+  }
+
+  return c.json({ deleted, failed });
+});
+
+// IIIF Viewer (iframe用 - CSS汚染を防ぐためスタンドアロンページ)
+resources.get('/:id/viewer', (c) => {
+  const resourceId = c.req.param('id');
+  const resource = getResourceById(resourceId);
+  if (!resource) {
+    return c.html('<h1>404 Not Found</h1>', 404);
+  }
+
+  const manifestUrl = `${CONFIG.baseUrl}/iiif/manifests/${resource.id}/manifest.json`;
+
+  return c.html(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    #mirador { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="mirador"></div>
+  <script src="https://cdn.jsdelivr.net/npm/mirador@3.3.0/dist/mirador.min.js"></script>
+  <script>
+    Mirador.viewer({
+      id: 'mirador',
+      manifests: { '${manifestUrl}': {} },
+      windows: [{ manifestId: '${manifestUrl}' }],
+      workspace: { showZoomControls: true },
+      workspaceControlPanel: { enabled: false }
+    });
+  </script>
+</body>
+</html>`);
 });
 
 // View resource
