@@ -53,7 +53,8 @@ export const AdminQuotaRequestDetail: FC<AdminQuotaRequestDetailProps> = ({
                       day: '2-digit',
                       hour: '2-digit',
                       minute: '2-digit',
-                      second: '2-digit'
+                      second: '2-digit',
+                      timeZone: 'Asia/Tokyo'
                     })}
                   </div>
                 </div>
@@ -107,7 +108,8 @@ export const AdminQuotaRequestDetail: FC<AdminQuotaRequestDetailProps> = ({
                         month: '2-digit',
                         day: '2-digit',
                         hour: '2-digit',
-                        minute: '2-digit'
+                        minute: '2-digit',
+                        timeZone: 'Asia/Tokyo'
                       })}
                     </div>
                   </div>
@@ -123,7 +125,8 @@ export const AdminQuotaRequestDetail: FC<AdminQuotaRequestDetailProps> = ({
                           month: '2-digit',
                           day: '2-digit',
                           hour: '2-digit',
-                          minute: '2-digit'
+                          minute: '2-digit',
+                          timeZone: 'Asia/Tokyo'
                         })}
                       </div>
                     </div>

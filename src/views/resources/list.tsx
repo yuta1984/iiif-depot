@@ -41,6 +41,9 @@ export const ResourceList: FC<ResourceListProps> = ({ user, resources }) => {
             <small class="text-muted">
               使用量: {formatBytes(user.storage_used)} / {formatBytes(user.storage_quota)} (残り: {formatBytes(remainingBytes)})
             </small>
+            <div>
+              <small class="text-muted">※ ストレージの使用容量はオリジナルのファイルサイズとPyramid TIFF化したファイルサイズの合計で計算されます</small>
+            </div>
             {usedPercent > 80 && (
               <div class="mt-2">
                 <a href="/quota/request" class="btn btn-sm btn-warning">
@@ -153,7 +156,8 @@ export const ResourceList: FC<ResourceListProps> = ({ user, resources }) => {
                             month: '2-digit',
                             day: '2-digit',
                             hour: '2-digit',
-                            minute: '2-digit'
+                            minute: '2-digit',
+                            timeZone: 'Asia/Tokyo'
                           })}</small>
                         </td>
                         <td>

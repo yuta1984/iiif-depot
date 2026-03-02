@@ -8,6 +8,7 @@ import { SessionData } from '../types';
 const redis = new Redis({
   host: CONFIG.redis.host,
   port: CONFIG.redis.port,
+  password: CONFIG.redis.password,
 });
 
 const SESSION_KEY = 'iiif_session';

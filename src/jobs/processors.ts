@@ -1,17 +1,16 @@
 import { Job } from 'bullmq';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import * as path from 'path';
 import * as fs from 'fs';
 import { ImageProcessingJobData } from '../types';
-import { updateImage, getImageById, createJobStatus, updateJobStatus, getJobStatusById, incrementStorageUsed, getResourceById, updateResource, getImagesByResourceId } from '../db/queries';
+import { updateImage, createJobStatus, updateJobStatus, getJobStatusById, updateResource, getImagesByResourceId } from '../db/queries';
 import { logger } from '../utils/logger';
-import { CONFIG } from '../config';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export async function processImage(job: Job<ImageProcessingJobData>): Promise<void> {
-  const { imageId, resourceId, userId, originalPath, ptiffPath } = job.data;
+  const { imageId, resourceId, originalPath, ptiffPath } = job.data;
 
   logger.info(`Processing image ${imageId} from ${originalPath}`);
 
@@ -57,9 +56,9 @@ export async function processImage(job: Job<ImageProcessingJobData>): Promise<vo
 
     // Get image dimensions first
     logger.info(`Getting dimensions for ${originalPath}`);
-    const { stdout: identifyOutput } = await execAsync(
-      `identify -format "%w %h" "${originalPath}"`
-    );
+    const { stdout: identifyOutput } = await execFileAsync('identify', [
+      '-format', '%w %h', originalPath
+    ]);
     const [width, height] = identifyOutput.trim().split(' ').map(Number);
 
     logger.info(`Image dimensions: ${width}x${height}`);
@@ -70,19 +69,18 @@ export async function processImage(job: Job<ImageProcessingJobData>): Promise<vo
 
     // Convert to pyramid TIFF
     logger.info(`Converting to pyramid TIFF: ${ptiffPath}`);
-    const convertCommand = `convert "${originalPath}" -define tiff:tile-geometry=256x256 -compress lzw 'ptif:${ptiffPath}'`;
-
-    await execAsync(convertCommand);
+    await execFileAsync('convert', [
+      originalPath,
+      '-define', 'tiff:tile-geometry=256x256',
+      '-compress', 'lzw',
+      `ptif:${ptiffPath}`
+    ]);
 
     logger.info(`Pyramid TIFF created: ${ptiffPath}`);
 
     // Update progress: 80%
     await job.updateProgress(80);
     updateJobStatus(job.id!, { progress: 80 });
-
-    // Get PTIFF file size
-    const ptiffStats = fs.statSync(ptiffPath);
-    const ptiffSize = ptiffStats.size;
 
     // Update image record
     updateImage(imageId, {
@@ -98,9 +96,6 @@ export async function processImage(job: Job<ImageProcessingJobData>): Promise<vo
       progress: 100,
       completed_at: Date.now(),
     });
-
-    // Update storage usage (add PTIFF size)
-    incrementStorageUsed(userId, ptiffSize);
 
     // Update progress: 100%
     await job.updateProgress(100);

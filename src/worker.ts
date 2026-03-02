@@ -7,6 +7,7 @@ import { ImageProcessingJobData } from './types';
 const connection = {
   host: CONFIG.redis.host,
   port: CONFIG.redis.port,
+  password: CONFIG.redis.password,
 };
 
 const worker = new Worker<ImageProcessingJobData>(

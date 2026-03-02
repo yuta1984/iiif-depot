@@ -3,6 +3,19 @@ import { config } from 'dotenv';
 // Load .env file
 config();
 
+// Validate required environment variables at startup
+const REQUIRED_VARS = [
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'SESSION_SECRET',
+] as const;
+
+for (const key of REQUIRED_VARS) {
+  if (!process.env[key]) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+}
+
 export const CONFIG = {
   // App settings
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -26,6 +39,7 @@ export const CONFIG = {
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    password: process.env.REDIS_PASSWORD || undefined,
   },
 
   // Storage

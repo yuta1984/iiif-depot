@@ -22,10 +22,16 @@ export function ensureDirectories(): void {
   }
 }
 
+const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.tif', '.tiff']);
+
 export function saveUploadedFile(file: UploadedFile, resourceId: string): string {
   ensureDirectories();
 
-  const ext = path.extname(file.name);
+  const ext = path.extname(file.name).toLowerCase();
+  if (!ALLOWED_EXTENSIONS.has(ext)) {
+    throw new Error(`Unsupported file extension: ${ext}`);
+  }
+
   const filename = `${resourceId}_${uuidv4()}${ext}`;
   const filepath = path.join(CONFIG.storage.uploadDir, filename);
 

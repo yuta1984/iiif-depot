@@ -1,15 +1,19 @@
 import { Hono } from 'hono';
+import { requireAuth } from '../middleware/auth';
 import { getResourceById, getImagesByResourceId, getJobStatusesByResourceId } from '../db/queries';
 
 const api = new Hono();
 
+api.use('*', requireAuth);
+
 // Get job status for a resource
 api.get('/resources/:id/status', (c) => {
   const resourceId = c.req.param('id');
+  const user = c.get('user')!;
 
   const resource = getResourceById(resourceId);
-  if (!resource) {
-    return c.json({ error: 'Resource not found' }, 404);
+  if (!resource || resource.user_id !== user.id) {
+    return c.json({ error: 'Not found' }, 404);
   }
 
   const images = getImagesByResourceId(resourceId);

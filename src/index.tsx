@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
+import { secureHeaders } from 'hono/secure-headers';
 import { CONFIG } from './config';
 import { logger } from './utils/logger';
 import { sessionMiddleware } from './middleware/session';
@@ -20,6 +21,26 @@ const app = new Hono();
 
 // Error handling middleware (must be first)
 app.use('*', errorHandler);
+
+// Derive Cantaloupe origin for CSP (may be HTTP in development)
+const cantaloupeOrigin = (() => {
+  try { return new URL(CONFIG.cantaloupePublicUrl).origin; } catch { return ''; }
+})();
+
+// Security headers
+app.use('*', secureHeaders({
+  contentSecurityPolicy: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'", 'https://cdn.jsdelivr.net', "'unsafe-inline'"],
+    styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
+    imgSrc: ["'self'", 'data:', 'https:', cantaloupeOrigin].filter(Boolean),
+    connectSrc: ["'self'", 'https:', cantaloupeOrigin].filter(Boolean),
+    frameSrc: ["'self'"],
+  },
+  xFrameOptions: 'SAMEORIGIN',
+  xContentTypeOptions: 'nosniff',
+  referrerPolicy: 'strict-origin-when-cross-origin',
+}));
 
 // Global middleware
 app.use('*', sessionMiddleware);

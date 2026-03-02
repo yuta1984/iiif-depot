@@ -27,8 +27,11 @@ RUN npm run build
 # Remove devDependencies after build
 RUN npm prune --production
 
-# Create data directories
-RUN mkdir -p /data/db /data/images/original /data/images/ptiff
+# Create data directories and set ownership to non-root node user
+RUN mkdir -p /data/db /data/images/original /data/images/ptiff \
+    && chown -R node:node /data /app
+
+USER node
 
 EXPOSE 3000
 

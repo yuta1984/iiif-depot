@@ -92,12 +92,12 @@ export const ResourceDetail: FC<ResourceDetailProps> = ({ user, resource, images
 
                 <div class="mb-3">
                   <label class="text-muted small">作成日</label>
-                  <div>{new Date(resource.created_at).toLocaleString('ja-JP')}</div>
+                  <div>{new Date(resource.created_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}</div>
                 </div>
 
                 <div class="mb-3">
                   <label class="text-muted small">更新日</label>
-                  <div>{new Date(resource.updated_at).toLocaleString('ja-JP')}</div>
+                  <div>{new Date(resource.updated_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}</div>
                 </div>
               </div>
             </div>

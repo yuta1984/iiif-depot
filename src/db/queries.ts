@@ -126,6 +126,26 @@ export function incrementStorageUsed(userId: string, bytes: number): void {
   logger.info(`Storage quota increased for user ${userId}: ${formatBytes(oldUsed)} -> ${formatBytes(newUsed)} (+${formatBytes(bytes)})`);
 }
 
+/**
+ * Atomically checks quota and increments storage_used if there is enough space.
+ * Returns true if the reservation succeeded, false if quota would be exceeded.
+ */
+export function checkAndIncrementStorageUsed(userId: string, bytes: number): boolean {
+  const db = getDatabase();
+  const tryIncrement = db.transaction(() => {
+    const user = db.prepare(
+      'SELECT storage_used, storage_quota FROM users WHERE id = ?'
+    ).get(userId) as { storage_used: number; storage_quota: number } | undefined;
+
+    if (!user || user.storage_used + bytes > user.storage_quota) return false;
+
+    db.prepare('UPDATE users SET storage_used = storage_used + ?, updated_at = ? WHERE id = ?')
+      .run(bytes, Date.now(), userId);
+    return true;
+  });
+  return tryIncrement() as boolean;
+}
+
 export function decrementStorageUsed(userId: string, bytes: number): void {
   const db = getDatabase();
   const user = getUserById(userId);

@@ -10,7 +10,7 @@ import {
   createImage,
   deleteImage,
   getUserById,
-  incrementStorageUsed,
+  checkAndIncrementStorageUsed,
   decrementStorageUsed,
   updateImage,
   getJobStatusesByResourceId,
@@ -112,21 +112,32 @@ resources.post('/', async (c) => {
     const fileArray = Array.isArray(files) ? files : [files];
     logger.info(`Received ${fileArray.length} files for upload`);
 
+    const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB per file
+
     // Validate file types and calculate total size
     let totalSize = 0;
+    const fileErrors: string[] = [];
     for (const file of fileArray) {
       if (typeof file === 'string') continue;
 
       if (!isAllowedFileType(file.type)) {
-        return c.html(<ResourceNew user={user} errors={{ images: `対応していないファイル形式です: ${file.type}` }} />);
+        fileErrors.push(`${file.name}: 対応していないファイル形式です (${file.type})`);
+        continue;
+      }
+
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        fileErrors.push(`${file.name}: ファイルサイズが上限（50MB）を超えています`);
+        continue;
       }
 
       totalSize += file.size;
     }
+    if (fileErrors.length > 0) {
+      return c.html(<ResourceNew user={user} errors={{ images: fileErrors.join('\n') }} />);
+    }
 
-    // Check storage quota
-    const remainingQuota = user.storage_quota - user.storage_used;
-    if (totalSize > remainingQuota) {
+    // Atomically reserve quota (2x original size to account for PTIFF conversion)
+    if (!checkAndIncrementStorageUsed(user.id, totalSize * 2)) {
       return c.html(<ResourceNew user={user} errors={{ images: 'ストレージ容量が不足しています' }} />);
     }
 
@@ -200,9 +211,6 @@ resources.post('/', async (c) => {
 
       logger.info(`Enqueued image processing job ${job.id} for image ${imageId}`);
     }
-
-    // Update storage used
-    incrementStorageUsed(user.id, totalSize);
 
     logger.info(`Resource ${resourceId} created with ${orderIndex} images (total ${fileArray.length} files received)`);
 

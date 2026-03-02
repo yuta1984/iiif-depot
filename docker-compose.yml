@@ -8,22 +8,17 @@ services:
     container_name: iiif-depot-app
     ports:
       - '127.0.0.1:3000:3000'
+    env_file:
+      - ${ENV_FILE:-.env.prod}
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - BASE_URL=https://iiif-depot.honkoku.org
       - DB_PATH=/data/db/iiif-depot.db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - UPLOAD_DIR=/data/images/original
       - PTIFF_DIR=/data/images/ptiff
-      - CANTALOUPE_URL=http://127.0.0.1:8182/iiif/2
-      - CANTALOUPE_PUBLIC_URL=https://iiif-img.honkoku.org/iiif/2
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
-      - SESSION_SECRET=${SESSION_SECRET}
-      - ADMIN_EMAILS=${ADMIN_EMAILS}
+      - CANTALOUPE_URL=http://cantaloupe:8182/iiif/2
       - DEFAULT_QUOTA_MB=100
     volumes:
       - ./data:/data
@@ -37,6 +32,8 @@ services:
       context: .
       dockerfile: Dockerfile.worker
     container_name: iiif-depot-worker
+    env_file:
+      - ${ENV_FILE:-.env.prod}
     environment:
       - NODE_ENV=production
       - DB_PATH=/data/db/iiif-depot.db
@@ -53,6 +50,16 @@ services:
   redis:
     image: redis:7-alpine
     container_name: iiif-depot-redis
+    env_file:
+      - ${ENV_FILE:-.env.prod}
+    command: >
+      sh -c '
+      if [ -n "$$REDIS_PASSWORD" ]; then
+        exec redis-server --requirepass "$$REDIS_PASSWORD"
+      else
+        exec redis-server
+      fi
+      '
     volumes:
       - redis-data:/data
     restart: unless-stopped
