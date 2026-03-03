@@ -27,9 +27,9 @@ RUN npm run build
 # Remove devDependencies after build
 RUN npm prune --production
 
-# Create iiif user (UID 1001) separate from host yhashimoto (UID 1000)
-RUN addgroup -g 1001 iiif \
-    && adduser -D -H -u 1001 -G iiif iiif \
+# Create iiif user matching host iiif user (UID 999)
+RUN addgroup -g 999 iiif \
+    && adduser -D -H -u 999 -G iiif iiif \
     && mkdir -p /data/db /data/images/original /data/images/ptiff \
     && chown -R iiif:iiif /data /app
 
