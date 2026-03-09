@@ -67,7 +67,7 @@ export const ResourceList: FC<ResourceListProps> = ({ user, resources }) => {
           <>
             <div class="card mb-3">
               <div class="card-body">
-                <div class="d-flex gap-2 align-items-center">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
                   <button type="button" class="btn btn-sm btn-outline-secondary" id="select-all-btn">
                     すべて選択
                   </button>
@@ -77,6 +77,9 @@ export const ResourceList: FC<ResourceListProps> = ({ user, resources }) => {
                   <div class="vr"></div>
                   <button type="button" class="btn btn-sm btn-primary" id="copy-selected-btn" disabled>
                     📋 選択中のURLをコピー
+                  </button>
+                  <button type="button" class="btn btn-sm btn-danger" id="bulk-delete-btn" disabled>
+                    🗑️ 選択中を削除
                   </button>
                   <small class="text-muted ms-2" id="selected-count">0件選択中</small>
                 </div>
@@ -95,7 +98,7 @@ export const ResourceList: FC<ResourceListProps> = ({ user, resources }) => {
                     <th style="width: 100px;">画像枚数</th>
                     <th style="width: 100px;">ステータス</th>
                     <th style="width: 160px;">作成日時</th>
-                    <th style="width: 280px;">操作</th>
+                    <th style="width: 300px;">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -108,13 +111,14 @@ export const ResourceList: FC<ResourceListProps> = ({ user, resources }) => {
                     const viewerUrl = `${CONFIG.baseUrl}/resources/${resource.id}`;
 
                     return (
-                      <tr>
+                      <tr data-resource-id={resource.id}>
                         <td>
                           <input
                             type="checkbox"
                             class="form-check-input resource-checkbox"
                             data-manifest-url={manifestUrl}
                             data-resource-id={resource.id}
+                            data-title={resource.title}
                           />
                         </td>
                         <td>
@@ -185,6 +189,15 @@ export const ResourceList: FC<ResourceListProps> = ({ user, resources }) => {
                             >
                               ✏️
                             </a>
+                            <button
+                              type="button"
+                              class="btn btn-outline-danger delete-btn"
+                              data-resource-id={resource.id}
+                              data-title={resource.title}
+                              title="削除"
+                            >
+                              🗑️
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -204,13 +217,16 @@ export const ResourceList: FC<ResourceListProps> = ({ user, resources }) => {
           const selectAllBtn = document.getElementById('select-all-btn');
           const deselectAllBtn = document.getElementById('deselect-all-btn');
           const copySelectedBtn = document.getElementById('copy-selected-btn');
+          const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
           const selectedCount = document.getElementById('selected-count');
           const copyUrlBtns = document.querySelectorAll('.copy-url-btn');
+          const deleteBtns = document.querySelectorAll('.delete-btn');
 
           function updateSelectedCount() {
             const checkedCount = document.querySelectorAll('.resource-checkbox:checked').length;
             selectedCount.textContent = checkedCount + '件選択中';
             copySelectedBtn.disabled = checkedCount === 0;
+            bulkDeleteBtn.disabled = checkedCount === 0;
 
             if (checkedCount === 0) {
               checkboxAll.checked = false;
@@ -247,12 +263,40 @@ export const ResourceList: FC<ResourceListProps> = ({ user, resources }) => {
             const selectedUrls = Array.from(document.querySelectorAll('.resource-checkbox:checked'))
               .map(cb => cb.dataset.manifestUrl)
               .join('\\n');
-
             if (selectedUrls) {
               navigator.clipboard.writeText(selectedUrls).then(() => {
                 const count = selectedUrls.split('\\n').length;
                 alert(count + '件のIIIF Manifest URLをコピーしました！');
               });
+            }
+          });
+
+          bulkDeleteBtn.addEventListener('click', async function() {
+            const checked = Array.from(document.querySelectorAll('.resource-checkbox:checked'));
+            const ids = checked.map(cb => cb.dataset.resourceId);
+            const titles = checked.map(cb => cb.dataset.title);
+            const count = ids.length;
+
+            if (!confirm('選択中の ' + count + ' 件を削除しますか？\\n\\n' + titles.join('\\n') + '\\n\\nこの操作は取り消せません。')) return;
+
+            bulkDeleteBtn.disabled = true;
+            bulkDeleteBtn.textContent = '削除中...';
+
+            try {
+              const res = await fetch('/resources/bulk-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids })
+              });
+              const data = await res.json();
+              if (data.failed && data.failed.length > 0) {
+                alert(data.deleted.length + '件を削除しました。' + data.failed.length + '件の削除に失敗しました。');
+              }
+              location.reload();
+            } catch (e) {
+              alert('削除に失敗しました。');
+              bulkDeleteBtn.disabled = false;
+              bulkDeleteBtn.textContent = '🗑️ 選択中を削除';
             }
           });
 
@@ -262,6 +306,38 @@ export const ResourceList: FC<ResourceListProps> = ({ user, resources }) => {
               navigator.clipboard.writeText(url).then(() => {
                 alert('IIIF Manifest URLをコピーしました！');
               });
+            });
+          });
+
+          deleteBtns.forEach(btn => {
+            btn.addEventListener('click', async function() {
+              const resourceId = this.dataset.resourceId;
+              const title = this.dataset.title;
+
+              if (!confirm('「' + title + '」を削除しますか？\\nこの操作は取り消せません。')) return;
+
+              this.disabled = true;
+              this.textContent = '削除中...';
+
+              try {
+                const res = await fetch('/resources/' + resourceId + '/delete', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                });
+                if (res.ok) {
+                  const row = document.querySelector('tr[data-resource-id="' + resourceId + '"]');
+                  if (row) row.remove();
+                  updateSelectedCount();
+                } else {
+                  alert('削除に失敗しました。');
+                  this.disabled = false;
+                  this.textContent = '🗑️';
+                }
+              } catch (e) {
+                alert('削除に失敗しました。');
+                this.disabled = false;
+                this.textContent = '🗑️';
+              }
             });
           });
         })();
@@ -285,26 +361,18 @@ function truncate(str: string, maxLength: number): string {
 
 function getStatusBadgeClass(status: string): string {
   switch (status) {
-    case 'ready':
-      return 'bg-success';
-    case 'processing':
-      return 'bg-warning';
-    case 'failed':
-      return 'bg-danger';
-    default:
-      return 'bg-secondary';
+    case 'ready': return 'bg-success';
+    case 'processing': return 'bg-warning';
+    case 'failed': return 'bg-danger';
+    default: return 'bg-secondary';
   }
 }
 
 function getStatusText(status: string): string {
   switch (status) {
-    case 'ready':
-      return '準備完了';
-    case 'processing':
-      return '処理中';
-    case 'failed':
-      return '失敗';
-    default:
-      return '不明';
+    case 'ready': return '準備完了';
+    case 'processing': return '処理中';
+    case 'failed': return '失敗';
+    default: return '不明';
   }
 }
