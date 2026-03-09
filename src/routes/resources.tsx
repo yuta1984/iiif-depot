@@ -43,7 +43,8 @@ resources.get('/', (c) => {
     return {
       ...resource,
       thumbnail: images.length > 0 ? images[0] : null,
-      imageCount: images.length
+      imageCount: images.length,
+      totalSize: images.reduce((sum, img) => { const ptiffSize = img.ptiff_path ? getFileSize(img.ptiff_path) : 0; return sum + img.file_size + ptiffSize; }, 0),
     };
   });
 

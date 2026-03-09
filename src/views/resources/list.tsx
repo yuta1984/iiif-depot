@@ -6,6 +6,7 @@ import { CONFIG } from '../../config';
 interface ResourceWithThumbnail extends IIIFResource {
   thumbnail?: Image | null;
   imageCount: number;
+  totalSize: number;
 }
 
 interface ResourceListProps {
@@ -148,6 +149,7 @@ export const ResourceList: FC<ResourceListProps> = ({ user, resources }) => {
                         </td>
                         <td>
                           <small>{resource.imageCount}コマ</small>
+                          <small class="text-muted">{formatBytes(resource.totalSize)}</small>
                         </td>
                         <td>
                           <span class={`badge ${getStatusBadgeClass(resource.status)}`}>
