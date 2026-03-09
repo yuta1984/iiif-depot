@@ -27,7 +27,6 @@ RUN npm run build
 # Remove devDependencies after build
 RUN npm prune --production
 
-USER iiif
 
 EXPOSE 3000
 
