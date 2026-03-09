@@ -28,9 +28,7 @@ RUN npm run build
 RUN npm prune --production
 
 # Create iiif user matching host iiif user (UID 999)
-RUN addgroup -g 999 iiif \
-    && adduser -D -H -u 999 -G iiif iiif \
-    && mkdir -p /data/db /data/images/original /data/images/ptiff \
+RUN mkdir -p /data/db /data/images/original /data/images/ptiff \
     && chown -R iiif:iiif /data /app
 
 USER iiif
