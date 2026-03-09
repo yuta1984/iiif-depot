@@ -18,7 +18,7 @@ services:
       - REDIS_PORT=6379
       - UPLOAD_DIR=/data/images/original
       - PTIFF_DIR=/data/images/ptiff
-      - CANTALOUPE_URL=http://cantaloupe:8182/iiif/2
+      - CANTALOUPE_URL=http://iiif-img.honkoku.org/iiif/2
       - DEFAULT_QUOTA_MB=100
     volumes:
       - ./data:/data
