@@ -16,6 +16,7 @@ import iiif from './routes/iiif';
 import api from './routes/api';
 import admin from './routes/admin';
 import quota from './routes/quota';
+import legal from './routes/legal';
 
 const app = new Hono();
 
@@ -54,6 +55,7 @@ app.route('/iiif', iiif);
 app.route('/api', api);
 app.route('/admin', admin);
 app.route('/quota', quota);
+app.route('/legal', legal);
 
 // Home page
 app.get('/', async (c) => {

@@ -112,9 +112,14 @@ export const Layout: FC<LayoutProps> = ({ title = 'IIIF Depot', user, children, 
                     </li>
                   </>
                 ) : (
-                  <li class="nav-item">
-                    <a class="nav-link" href="/auth/login">ログイン</a>
-                  </li>
+                  <>
+                    <li class="nav-item">
+                      <a class="nav-link" href="/legal/tos">利用規約</a>
+                    </li>
+                    <li class="nav-item">
+                      <a class="nav-link" href="/auth/login">ログイン</a>
+                    </li>
+                  </>
                 )}
               </ul>
             </div>
