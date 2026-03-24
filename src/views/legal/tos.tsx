@@ -72,14 +72,6 @@ export const TosPage: FC<TosPageProps> = ({ user }) => {
               <p>運営者は、必要と判断した場合には、利用者に通知することなく本規約を変更することができます。変更後の規約は、本サービス上に掲載された時点で効力を生じるものとします。</p>
             </section>
 
-            <section class="mb-5">
-              <h2 class="h4 mb-3">9. 準拠法および管轄</h2>
-              <ul>
-                <li class="mb-2">本規約は日本法に準拠します。</li>
-                <li class="mb-2">本サービスに関して生じた紛争については、運営者の所在地を管轄する地方裁判所を第一審の専属的合意管轄裁判所とします。</li>
-              </ul>
-            </section>
-
             <div class="mt-5">
               <a href="/auth/login" class="btn btn-primary">ログインページに戻る</a>
             </div>
